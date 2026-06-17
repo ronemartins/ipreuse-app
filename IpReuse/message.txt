@@ -1,0 +1,144 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.address (
+  id integer NOT NULL DEFAULT nextval('address_id_seq'::regclass),
+  zipcode character varying NOT NULL,
+  country character varying NOT NULL DEFAULT 'BRA'::character varying,
+  state character varying NOT NULL,
+  city character varying NOT NULL,
+  street character varying NOT NULL,
+  address_line_2 character varying,
+  number integer NOT NULL,
+  land_mark character varying,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone,
+  CONSTRAINT address_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.enterprise (
+  id integer NOT NULL DEFAULT nextval('enterprise_id_seq'::regclass),
+  name character varying NOT NULL,
+  document character varying NOT NULL UNIQUE,
+  email character varying NOT NULL,
+  phone character varying,
+  address_id integer NOT NULL,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone,
+  deleted_at timestamp without time zone,
+  CONSTRAINT enterprise_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_enterprise_address FOREIGN KEY (address_id) REFERENCES public.address(id)
+);
+CREATE TABLE public.ip_comment (
+  id integer NOT NULL DEFAULT nextval('ip_comment_id_seq'::regclass),
+  ip_id integer NOT NULL,
+  user_id integer NOT NULL,
+  comment text NOT NULL,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT ip_comment_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_ipc_ip FOREIGN KEY (ip_id) REFERENCES public.ip_core(id),
+  CONSTRAINT fk_ipc_user FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.ip_core (
+  id integer NOT NULL DEFAULT nextval('ip_core_id_seq'::regclass),
+  company_id integer NOT NULL,
+  created_by integer NOT NULL,
+  title character varying NOT NULL,
+  description character varying NOT NULL,
+  type USER-DEFINED NOT NULL,
+  maturity_level USER-DEFINED NOT NULL,
+  compatibility character varying NOT NULL,
+  license_id integer NOT NULL,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone,
+  deleted_at timestamp without time zone,
+  CONSTRAINT ip_core_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_ip_company FOREIGN KEY (company_id) REFERENCES public.enterprise(id),
+  CONSTRAINT fk_ip_creator FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT fk_ip_license FOREIGN KEY (license_id) REFERENCES public.license(id)
+);
+CREATE TABLE public.ip_file (
+  id integer NOT NULL DEFAULT nextval('ip_file_id_seq'::regclass),
+  ip_id integer NOT NULL,
+  version integer NOT NULL,
+  author_id integer NOT NULL,
+  data_path character varying NOT NULL,
+  type character varying NOT NULL,
+  tam integer NOT NULL,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  changes text,
+  CONSTRAINT ip_file_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_ipf_ip FOREIGN KEY (ip_id) REFERENCES public.ip_core(id),
+  CONSTRAINT fk_ipf_author FOREIGN KEY (author_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.ip_version_history (
+  id integer NOT NULL DEFAULT nextval('ip_version_history_id_seq'::regclass),
+  ip_id integer NOT NULL,
+  author_id integer NOT NULL,
+  version character varying NOT NULL,
+  description character varying NOT NULL,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT ip_version_history_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_iph_ip FOREIGN KEY (ip_id) REFERENCES public.ip_core(id),
+  CONSTRAINT fk_iph_author FOREIGN KEY (author_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.license (
+  id integer NOT NULL DEFAULT nextval('license_id_seq'::regclass),
+  name USER-DEFINED NOT NULL,
+  description text NOT NULL,
+  url character varying,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT license_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.permission (
+  id integer NOT NULL DEFAULT nextval('permission_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  description character varying NOT NULL,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone,
+  deleted_at timestamp without time zone,
+  CONSTRAINT permission_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.role (
+  id integer NOT NULL DEFAULT nextval('role_id_seq'::regclass),
+  name character varying NOT NULL,
+  description character varying NOT NULL,
+  company_id integer NOT NULL,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone,
+  deleted_at timestamp without time zone,
+  CONSTRAINT role_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_role_company FOREIGN KEY (company_id) REFERENCES public.enterprise(id)
+);
+CREATE TABLE public.role_permission (
+  id integer NOT NULL DEFAULT nextval('role_permission_id_seq'::regclass),
+  role_id integer NOT NULL,
+  permission_id integer NOT NULL,
+  CONSTRAINT role_permission_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_rp_role FOREIGN KEY (role_id) REFERENCES public.role(id),
+  CONSTRAINT fk_rp_permission FOREIGN KEY (permission_id) REFERENCES public.permission(id)
+);
+CREATE TABLE public.user_role (
+  id integer NOT NULL DEFAULT nextval('user_role_id_seq'::regclass),
+  user_id integer NOT NULL,
+  role_id integer NOT NULL,
+  CONSTRAINT user_role_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_ur_user FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT fk_ur_role FOREIGN KEY (role_id) REFERENCES public.role(id)
+);
+CREATE TABLE public.users (
+  id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+  company_id integer NOT NULL,
+  username character varying NOT NULL UNIQUE,
+  email character varying,
+  password character varying NOT NULL,
+  name character varying NOT NULL,
+  surname character varying NOT NULL,
+  phone character varying,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp without time zone,
+  deleted_at timestamp without time zone,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_user_company FOREIGN KEY (company_id) REFERENCES public.enterprise(id)
+);
